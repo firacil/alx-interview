@@ -8,15 +8,11 @@ def minOperations(n):
     """
         method to calculate fewest operation
     """
-    if n == 1:
-        return 0
-
-    dp = [float('inf')] * (n + 1)
-    dp[1] = 0
-
-    for i in range(2, n + 1):
-        for j in range(1, i):
-            if i % j == 0:
-                dp[i] = min(dp[i], dp[j] + i // j)
-
-    return dp[n]
+    minim = 2
+    total = 0
+    while n > 1:
+        while n % minim == 0:
+            total += minim
+            n /= minim
+        minim += 1
+    return total
