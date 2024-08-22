@@ -16,33 +16,36 @@ def validUTF8(data):
     mask2 = 1 << 6  # 01000000
 
     for num in data:
-        # convert to the 8 least significant bits
-        byte = num & 0xFF
+        lead_mask = 1 << 7
 
         if num_bytes == 0:
-            # determine the number of bytes in uft-8 char
-            if (byte & mask1) == 0:
-                # 1-byte char (0xxxxxxx)
-                continue
-            elif (byte & mask1) and (byte & mask2) == 0:
-                # invalid leading byte (shoul not be 10xxxxxx)
-                return False
-            elif (byte & mask1) and (byte & (mask1 >> 1)):
-                # 2-byte charchter (110xxxxx)
-                num_bytes = 1
-            elif (byte & mask1) and (byte & (mask1 >> 2)):
-                # 3-byte charchter (1110xxxx)
-                num_bytes = 2
-            elif (byte & mask1) and (byte & (mask1 >> 3)):
-                # 4-byte charcter (11110xxx)
-                num_bytes = 3
-            else:
-                return False
-        else:
-            # continuation bytes (10xxxxxx)
-            if not (byte & mask1) or (byte & mask2):
-                return False
-            num_bytes -= 1
+            while lead_mask & num:
+                num_bytes += 1
+                lead_mask = lead_mask >> 1
 
-    # if there leftover bytes to process the encoding is invalid
-    return num_bytes == 0
+            # if byte is not a multi-byte sequence,
+            # move to next byte
+            if num_bytes == 0:
+                continue
+
+            # if number of continuation byte is not
+            # b/n 2 and 4, the sequence is invalid
+            if num_bytes == 1 or num_bytes > 4:
+                return False
+
+        # if we are expecting continuation bytes
+        else:
+            # check that the byte starts with a "10"
+            # prefix and not a "11" prefix
+            if not (num & mask1 and not (num & mask2)):
+                return False
+
+        # decrement the expected number of continuation bytes
+        num_bytes -= 1
+
+    # if we have processed all bytes and are not expecting
+    # another continuation bytes, sequence is valid
+    if num_bytes == 0:
+        return True
+    else:
+        return False
